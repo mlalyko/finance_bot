@@ -1,7 +1,8 @@
 from mongoengine import *
-from config import DATABASE
+from decouple import config
 
-connect(DATABASE)
+
+connect(config('DATABASE'))
 
 
 class Category(EmbeddedDocument):

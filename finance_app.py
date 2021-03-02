@@ -1,11 +1,11 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, ConversationHandler, Filters, CallbackQueryHandler
-from config import TG_TOKEN
 from views import common_handlers, payments
+from decouple import config
 
 
 def main():
     print('Start')
-    updater = Updater(token=TG_TOKEN, use_context=True)
+    updater = Updater(token=config('TG_TOKEN'), use_context=True)
     dp = updater.dispatcher.add_handler
 
     dp(ConversationHandler(
