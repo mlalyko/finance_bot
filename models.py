@@ -18,6 +18,7 @@ class Payment(EmbeddedDocument):
     price = IntField()
     payment_info = StringField()
     category = StringField()
+    date = DateField()
 
     def __str__(self):
         return f'{self.payment_info[:10]}...: {self.price}'

@@ -1,3 +1,4 @@
+from datetime import datetime
 from telegram.ext import ConversationHandler
 from models import Payment
 import keyboards
@@ -34,12 +35,19 @@ def choose_category(update, context):
         try:
             context.user_data['category'] = [i.name for i in existing_user.categories if i.name == received_message[2:]][0]
         except IndexError:
-            handle_error(update, 'Can\'t define category')
+            handle_error(update, 'Can\'t define category. Try again.')
+            return ConversationHandler.END
         else:
-            text = (f'Your payment: {context.user_data["payment_info"]} {context.user_data["price"]} rub in '
-                    f'{context.user_data["category"]}\nAlways, ok?')
-            update.message.reply_text(text, reply_markup=keyboards.ok_kb)
-            return CONFIRMATION
+            if context.user_data.get('show'):
+                show_payment_info(update, context)
+                context.user_data["show"] = False
+                return ConversationHandler.END
+
+            else:
+                text = (f'Your payment: {context.user_data["payment_info"]} {context.user_data["price"]} rub in '
+                        f'{context.user_data["category"]}\nAlways, ok?')
+                update.message.reply_text(text, reply_markup=keyboards.ok_kb)
+                return CONFIRMATION
 
 
 def payment_data_confirmation(update, context):
@@ -60,7 +68,8 @@ def add_payment_in_db(update, context):
     new_payment = Payment(
         price=context.user_data['price'],
         payment_info=context.user_data['payment_info'],
-        category=context.user_data['category']
+        category=context.user_data['category'],
+        date=datetime.today()
     )
 
     existing_user.payments.append(new_payment)
@@ -78,4 +87,24 @@ def define_price_and_payment_info(message):
 
     return price, payment_info
 
+
+def show_payment_info(update, context):
+    user = identify_user(update)
+    text = ''
+    payments_sum = 0
+
+    for payment in user.payments:
+        if payment.date.month == datetime.today().month and payment.category == context.user_data["category"]:
+            text += f'{payment.price} rub, {payment.payment_info} ({payment.date})\n'
+            payments_sum += payment.price
+
+    text += '\nTotal: ' + str(payments_sum)
+
+    update.message.reply_text(text)
+
+
+def send_choose_kb(update, context):
+    context.user_data["show"] = True
+    update.message.reply_text('Choose category', reply_markup=keyboards.create_category_keyboard(identify_user(update)))
+    return CATEGORY
 
